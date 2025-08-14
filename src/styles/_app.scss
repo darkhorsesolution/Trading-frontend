@@ -1,0 +1,8 @@
+@import "./fonts.scss";
+@import "./_scollbar.scss";
+@import "DockView";
+@import "./flags";
+
+body {
+  overscroll-behavior-y: contain;
+}

@@ -1,0 +1,28 @@
+export type ICalendarEvent = {
+  id: string;
+  eventId: string;
+  createdAt: Date;
+  dateUtc: Date;
+  periodDateUtc?: Date | null;
+  periodType?: string | null;
+  actual?: number | null;
+  revised?: number | null;
+  consensus?: number | null;
+  ratioDeviation?: number | null;
+  previous?: number | null;
+  isBetterThanExpected?: boolean | null;
+  name: string;
+  countryCode: string;
+  currencyCode: string;
+  unit?: string | null;
+  potency?: string | null;
+  volatility: string;
+  isAllDay?: boolean;
+  isTentative?: boolean;
+  isPreliminary?: boolean;
+  isReport?: boolean;
+  isSpeech?: boolean;
+  lastUpdated: number;
+  previousIsPreliminary?: boolean | null;
+  details?: object | null;
+};

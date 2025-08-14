@@ -1,0 +1,29 @@
+{
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@next/next/recommended"
+  ],
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "node_modules/**",
+    "public/**",
+    "*.js"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint", "@next/next"],
+  "root": true,
+  "rules": {
+    "@typescript/originalKeywordKind": ["off"],
+    "@typescript-eslint/no-empty-interface": ["off"],
+    "@typescript-eslint/semi": "warn",
+    "@typescript-eslint/no-explicit-any": ["off"],
+    "@typescript-eslint/no-unused-vars": ["off"],
+    "@typescript-eslint/ban-ts-comment": ["off"],
+    "@typescript-eslint/no-empty-function": ["off"],
+    "@typescript-eslint/no-inferrable-types": ["off"],
+    "prefer-const": ["off"],
+    "no-empty-pattern": ["off"]
+  }
+}
+

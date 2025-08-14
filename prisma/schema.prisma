@@ -1,0 +1,338 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Event {
+  NOTIFICATION @map("notification")
+  CONNECTED    @map("connected")
+  DISCONNECTED @map("disconnected")
+  SUBMISSION   @map("submission")
+  MODIFICATION @map("modification")
+  EXECUTION    @map("execution")
+  REJECTION    @map("rejection")
+
+  @@map("log_event")
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  subject   String
+  text      String
+  userId    String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Order {
+  id                   String    @id @default(cuid())
+  ticket               String?
+  user                 User      @relation(fields: [account], references: [account], onDelete: Cascade)
+  account              String
+  symbol               String
+  side                 String
+  type                 String
+  status               String?
+  limitPrice           String?
+  stopPrice            String?
+  clOrderLinkId        String?
+  origClOrderId        String?
+  cumQty               String?
+  lastQty              String?
+  orderQty             String?
+  lastPrice            String?
+  commission           String?
+  timeInForce          String?
+  oco                  Order?    @relation("oco", fields: [ocoId], references: [id], onDelete: SetNull)
+  ocoId                String?   @unique
+  ocoTarget            Order?    @relation("oco")
+  stopLossPips         Int?
+  stopLossPipsChange   String?
+  stopLoss             String?
+  trailingStopLoss     String?
+  takeProfitPips       Int?
+  takeProfitPipsChange String?
+  takeProfit           String?
+  comment              String?
+  createdAt            DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt            DateTime? @db.Timestamptz(3)
+  executionTime        DateTime? @default(now()) @db.Timestamptz(3)
+  trigger              String    @default("mkt")
+  direct               Boolean   @default(false)
+  @@unique([ticket])
+  @@map("orders")
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation("userId", fields: [userId], references: [id], onDelete: Cascade)
+  quotesRate            Float?   @default(500) @db.Real
+  pollingRate           Float?   @default(5000) @db.Real
+  watchedAssets         Json?    @default("[{\"symbol\":\"EURUSD\",\"index\":0}]") @db.Json
+  workspaces            Json?    @db.Json
+  syncWorkspaces        Boolean  @default(true)
+  sounds                Boolean  @default(true)
+  tableRowDblClick      Boolean  @default(false)
+  directOrders          Boolean  @default(false)
+  enableInternalActions Boolean @default(false)
+  twoFactorUrl          String?
+  twoFactorBase32       String?
+  forexAssets           Boolean @default(true)
+  metalsAssets          Boolean @default(true)
+  indicesAssets         Boolean @default(true)
+  energiesAssets        Boolean @default(true)
+  cryptoAssets          Boolean @default(true)
+  
+  lotSizeForex          Float   @default(1000) // 100k
+  lotSizeMetals         Float   @default(10) // 100
+  lotSizeIndices        Float   @default(0.1) //0.1
+  lotSizeEnergies       Float   @default(10) // 100
+  lotSizeCrypto         Float   @default(1) 
+  lotSizeCfd            Float   @default(0.1) // assets could have cfd flag - this takes precedence // 1.0
+
+  forexAssetsVolumes    String[] @default(["10000", "50000", "100000", "500000"]) // 100k, 500k, 1M, 2M
+  metalsAssetsVolumes   String[] @default(["10", "50", "100", "500"]) // 100, 500, 1000, 2000
+  indicesAssetsVolumes  String[] @default(["0.1", "1.0", "5.0", "10.0"]) // 1, 5, 10, 20
+  energiesAssetsVolumes String[] @default(["10", "50", "100", "500"]) // 100, 500, 1000, 2000
+  cryptoAssetsVolumes   String[] @default(["1.0", "10", "50", "100"]) // same
+  
+  createdAt             DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime @updatedAt @db.Timestamptz(3)
+
+  defaultLotSizeFx      Int?     @default(1000) // deprecated 
+  defaultLotSizeCfd     Float?   @default(0.1) // deorecated
+  defaultLotSizeMetals  Float?   @default(10) // deprecated
+
+  @@map("settings")
+}
+
+model Trade {
+  id                   String    @id @default(cuid())
+  side                 String?
+  user                 User      @relation(fields: [account], references: [account], onDelete: Cascade)
+  account              String
+  symbol               String?
+  tradeDate            String?
+  transactTime         DateTime? @db.Timestamptz(6)
+  orderId              String?
+  clOrderId            String?
+  currency             String?
+  commission           String?
+  settledPL            String?
+  swaps                String?
+  price                String?
+  quantity             String?
+  clearingBusinessDate String?
+  tradeLinkId          String?
+  hedged               Boolean   @default(false)
+  stopLoss             String?
+  trailingStopLoss     String?
+  takeProfit           String?
+  stopLossTrigger      String?
+  takeProfitTrigger    String?
+  lastAsk              String?
+  lastBid              String?
+  lastCounterPrice     String?
+  trigger              String?
+  direct               Boolean   @default(false)
+  createdAt            DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([account])
+  @@map("trades")
+}
+
+model Transaction {
+  id             String  @id @default(cuid())
+  user           User    @relation(fields: [account], references: [account], onDelete: Cascade)
+  account        String
+  currency       String?
+  moneyType      String?
+  moneyAmt       String?
+  text           String?
+  dateOfInterest BigInt?
+
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  
+  @@map("transactions")
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [account], references: [account], onDelete: Cascade)
+  account   String?
+  type      String
+  event     Event?
+  admin     Boolean  @default(false)
+  message   String?
+  group     String?
+  location  String?
+  ip        String?
+  raw       String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([group])
+  @@map("logs")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String   @unique
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  account              String    @id @unique
+  id                   String    @unique @default(cuid())
+  status               String    @db.VarChar
+  firstName            String?   @db.VarChar
+  lastName             String?   @db.VarChar
+  email                String?   @db.VarChar
+  phone                String?   @db.VarChar
+  accountType          String
+  dob                  Int?
+  currency             String?
+  settings             Settings? @relation("userId")
+  master               User?     @relation("Master", fields: [masterId], references: [account], onDelete: Cascade)
+  masterId             String?
+  admin                Boolean   @default(false)
+  hedged               Boolean   @default(false)
+  institutional        Boolean   @default(false)
+  platform             String    @default("")
+  total_balance        String    @default("0")
+  total_netEquity      String    @default("0")
+  total_profitLoss     String    @default("0")
+  total_openProfitLoss String    @default("0")
+  total_deposit        String    @default("0")
+  total_withdrawal     String    @default("0")
+  total_fees           String    @default("0")
+  total_adjustment     String    @default("0")
+  total_commission     String    @default("0")
+  total_rollover       String    @default("0")
+  total_dividend       String    @default("0")
+  total_mtmpl          String    @default("0")
+  daily_date           String    @default("")
+  daily_openBalance    String    @default("0")
+  daily_closeBalance   String    @default("0")
+  daily_netEquity      String    @default("0")
+  daily_profitLoss     String    @default("0")
+  daily_openProfitLoss String    @default("0")
+  daily_deposit        String    @default("0")
+  daily_withdrawal     String    @default("0")
+  daily_fees           String    @default("0")
+  daily_adjustment     String    @default("0")
+  daily_commission     String    @default("0")
+  daily_rollover       String    @default("0")
+  daily_dividend       String    @default("0")
+  daily_mtmpl          String    @default("0")
+  marginPercentage     String    @default("0")
+  creditLimit          String    @default("0")
+  creditUsage          String    @default("0")
+  creditAvailable      String    @default("0")
+  creditUsagePercent   String    @default("0")
+  availableMargin      String    @default("0")
+  lastMessageSeen      String?
+  createdAt            DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime  @updatedAt @db.Timestamptz(3)
+  deletedAt            DateTime? @db.Timestamptz(3)
+
+  subUsers     User[]        @relation("Master")
+  trades       Trade[]
+  orders       Order[]
+  transactions Transaction[]
+  logs         Log[]
+  sessions     Session[]
+  Message      Message[]
+
+  @@map("users")
+}
+
+model AccountSnapshot {
+  account            String
+  time               DateTime
+  balance            String
+  netEquity          String
+  profitLoss         String
+  openProfitLoss     String
+  deposit            String?
+  withdrawal         String?
+  fees               String?
+  adjustment         String?
+  commission         String?
+  rollover           String?
+  dividend           String?
+  mtmpl              String?
+  marginPercentage   String?
+  creditLimit        String?
+  creditUsage        String?
+  creditUsagePercent String?
+  availableMargin    String?
+
+  @@id([account, time])
+  @@map("account_snapshots")
+}
+
+model Article {
+  id          String   @id @default(uuid())
+  createdAt   DateTime
+  pubDate     String   @db.VarChar(300)
+  title       String   @db.VarChar(500)
+  slug        String   @db.VarChar(500)
+  description String
+  link        String   @db.VarChar(300)
+  pair        String   @db.VarChar(500)
+  provider    String   @db.VarChar(120)
+  market      String   @db.VarChar(120)
+  headline    Boolean  @default(false)
+  summary     String
+
+  @@index([createdAt], name: "createdAt")
+  @@map("articles")
+}
+
+model CalendarEvent {
+  id                    String    @id @default(uuid()) @map("id")
+  createdAt             DateTime  @default(now())
+  eventId               String    @map("eventId")
+  dateUtc               DateTime  @map("dateUtc")
+  periodDateUtc         DateTime? @map("periodDateUtc")
+  periodType            String?   @map("periodType")
+  actual                Float?    @map("actual")
+  revised               Float?    @map("revised")
+  consensus             Float?    @map("consensus")
+  ratioDeviation        Float?    @map("ratioDeviation")
+  previous              Float?    @map("previous")
+  isBetterThanExpected  Boolean?  @map("isBetterThanExpected")
+  name                  String    @map("name")
+  countryCode           String    @map("countryCode")
+  currencyCode          String    @map("currencyCode")
+  unit                  String?   @map("unit")
+  potency               String?   @map("potency")
+  volatility            String    @map("volatility")
+  isAllDay              Boolean?   @map("isAllDay")
+  isTentative           Boolean?   @map("isTentative")
+  isPreliminary         Boolean?   @map("isPreliminary")
+  isReport              Boolean?   @map("isReport")
+  isSpeech              Boolean?   @map("isSpeech")
+  lastUpdated           Int       @map("lastUpdated")
+  previousIsPreliminary Boolean?  @map("previousIsPreliminary")
+  details               Json?     @map("details")
+
+  @@index([eventId], name: "eventId_idx")
+  @@index([dateUtc], name: "dateUtc")
+  @@map("calendar_events")
+}

@@ -1,0 +1,12 @@
+appId: com.atcbrokers.platform
+productName: ATC platform
+copyright: Copyright © 2023 ATC
+directories:
+  output: electron-dist
+  buildResources: public
+files:
+  - from: .
+    filter:
+      - package.json
+      - app
+publish: null

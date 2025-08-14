@@ -1,0 +1,22 @@
+@import "theme";
+@import "actionsContainer";
+@import "console";
+@import "defaultTab";
+@import "dockviewComponent";
+@import "droptarget";
+@import "gridview";
+@import "groupview";
+@import "math";
+@import "nested";
+@import "paneview";
+@import "resize";
+@import "sideBySide";
+@import "splitview";
+@import "svg";
+@import "tabsContainer";
+@import "watermark";
+
+.dockview-react-part {
+  height: 100%;
+  width: 100%;
+}
