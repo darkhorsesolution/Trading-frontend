@@ -34,6 +34,7 @@ import OneSignal from "react-onesignal";
 import getConfig from "next/config";
 import { VersionProvider } from "@/lib/version";
 import Head from 'next/head'
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 
 const blockUpdatesMiddleware = (store) => (next) => (action) => {
   if (store.getState().disableUpdates && action.type !== "ALLOWED_ACTION") {
@@ -115,15 +116,17 @@ function App({ Component, pageProps }) {
                 <Notifications limit={10} autoClose={3000} />
 
                 <SessionProvider session={pageProps.session} refetchInterval={10}>
-                  {Component.auth ? (
-                    <Auth>
-                      {getLayout(
-                        <Component key={router.asPath} {...pageProps} />
-                      )}
-                    </Auth>
-                  ) : (
-                    getLayout(<Component key={router.asPath} {...pageProps} />)
-                  )}
+                  <WebSocketProvider>
+                    {Component.auth ? (
+                      <Auth>
+                        {getLayout(
+                          <Component key={router.asPath} {...pageProps} />
+                        )}
+                      </Auth>
+                    ) : (
+                      getLayout(<Component key={router.asPath} {...pageProps} />)
+                    )}
+                  </WebSocketProvider>
                 </SessionProvider>
               </ModalsProvider>
             </VersionProvider>
