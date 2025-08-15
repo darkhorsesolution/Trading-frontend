@@ -45,6 +45,7 @@ const blockUpdatesMiddleware = (store) => (next) => (action) => {
 };
 const store = configureStore({
   reducer: rootReducer,
+  devTools: true,
   middleware: (getDefaultMiddleware) => {
     // disable this line to reduce logs...
     //mws.push(logger);
@@ -141,7 +142,14 @@ function Auth({ children }) {
   const { data, status } = useSession();
   const [onesignalInited, setOnesignalInited] = useState(false);
 
-  const isUser = !!data;
+  const [wsAuthenticated, setWsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const wsAuthFlag = localStorage.getItem('ws_authenticated');
+    setWsAuthenticated(wsAuthFlag === "true");
+  }, []);
+
+  const isUser = !!data || wsAuthenticated;
   React.useEffect(() => {
     if (status === "loading") return; // Do nothing while loading
     if (!isUser) {

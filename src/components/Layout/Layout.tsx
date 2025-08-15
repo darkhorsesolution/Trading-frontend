@@ -48,6 +48,7 @@ import AssetInfo, { AssetInfoProps } from "./AssetInfo";
 import { XYCoord, useDrop } from "react-dnd";
 import { useRouter } from "next/router";
 import { Device, useDevice } from "@/services/UseDevice";
+import WebSocketQuoteService from "@/components/WebSocketQuoteService";
 import { useLocalStorage } from "@mantine/hooks";
 import Market from "@/widgets/Market/Market";
 import TradePanel from "../Trade/TradePanel";
@@ -445,6 +446,9 @@ const Layout = ({ spacing = "sm", session }: LayoutProps) => {
             <DataServiceAgent session={session} render={true} />
           </Group>
         </Flex>
+        
+        {/* WebSocket Quote Service - runs in background */}
+        <WebSocketQuoteService />
       </Flex>
     </AppShell>
   );

@@ -95,15 +95,50 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
   const settings = useSelector(settingsSelector);
   const connectionStates = useSelector(lastConnectionStatesSelector);
   const { classes, cx } = useStyles();
-  const wsToken = session ? session.wsToken : "";
+  const wsToken = session?.wsToken || "";
   const { logs, connectionLogs } = useSelector(logsSelector);
-  const [playOrderExecution] = useSound(sounds.orderExecution);
-  const [playOrderRejection] = useSound(sounds.orderRejection);
-  const [playOrderSubmission] = useSound(sounds.orderSubmissionModification);
-  const [playNotification] = useSound(sounds.notification);
-  const [playConnect] = useSound(sounds.connect);
-  const [playDisconnect] = useSound(sounds.disconnect);
+  
+  // Early return if no session and not rendering
+  if (!session && !render) {
+    return null;
+  }
+  // Safe sound hooks with fallback
+  const [playOrderExecution] = useSound(sounds.orderExecution || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.orderExecution 
+  });
+  const [playOrderRejection] = useSound(sounds.orderRejection || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.orderRejection 
+  });
+  const [playOrderSubmission] = useSound(sounds.orderSubmissionModification || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.orderSubmissionModification 
+  });
+  const [playNotification] = useSound(sounds.notification || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.notification 
+  });
+  const [playConnect] = useSound(sounds.connect || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.connect 
+  });
+  const [playDisconnect] = useSound(sounds.disconnect || '', { 
+    volume: 0.5,
+    soundEnabled: !!sounds.disconnect 
+  });
   const [isExecutionAllowed, setIsExecutionAllowed] = useState(true);
+
+  // Safe sound playing function
+  const safePlaySound = (soundFunction: () => void, soundName: string = 'sound') => {
+    try {
+      if (typeof soundFunction === 'function') {
+        soundFunction();
+      }
+    } catch (error) {
+      console.warn(`Failed to play ${soundName}:`, error);
+    }
+  };
 
   let reloading = false;
   const reloadFromWebWorker = async (withQuotes: boolean) => {
@@ -152,6 +187,9 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
       await worker.close();
       await worker[releaseProxy]();
     }
+
+    console.log("ws token => ", wsToken, currentSubAccount);
+    
     const RemoteChannel = wrap<typeof DataWorker>(new Worker());
 
     worker = await new RemoteChannel(
@@ -361,10 +399,10 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
 
   /* Load subaccount when switching */
   useEffect(() => {
-    if (!currentSubAccount) return;
+    if (!currentSubAccount || !session?.user) return;
 
-    const reloadSettingsUser = session.user.admin
-      ? session.user.account
+    const reloadSettingsUser = session?.user?.admin
+      ? session?.user?.account
       : currentSubAccount;
 
     // load settings/workspaces for switched account (if admin - use login account)
@@ -393,8 +431,10 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
   }, [currentSubAccount]);
 
   useEffect(() => {
+    console.log('socket initializing');
+    
+    socketInitializer();
     if (wsToken && currentSubAccount) {
-      socketInitializer();
     }
   }, [wsToken, currentSubAccount]);
 
@@ -435,9 +475,9 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
 
     if (log && log.connected !== prevLog.connected) {
       if (log.connected) {
-        playConnect();
+        safePlaySound(playConnect, 'connect');
       } else {
-        playDisconnect();
+        safePlaySound(playDisconnect, 'disconnect');
       }
     }
   }, [connectionLogs]);
@@ -452,7 +492,7 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
     switch (log.event) {
       case LogEvent.EXECUTION:
         if (isExecutionAllowed) {
-          playOrderExecution();
+          safePlaySound(playOrderExecution, 'order execution');
           setIsExecutionAllowed(false);
           setTimeout(() => {
             setIsExecutionAllowed(true);
@@ -460,16 +500,16 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
         }
         break;
       case LogEvent.MODIFICATION:
-        playOrderSubmission();
+        safePlaySound(playOrderSubmission, 'order submission');
         break;
       case LogEvent.SUBMISSION:
-        //   playOrderSubmission();
+        //   safePlaySound(playOrderSubmission, 'order submission');
         break;
       case LogEvent.REJECTION:
-        playOrderRejection();
+        safePlaySound(playOrderRejection, 'order rejection');
         break;
       case LogEvent.NOTIFICATION:
-        playNotification();
+        safePlaySound(playNotification, 'notification');
         break;
     }
   }, [logs]);
@@ -517,10 +557,16 @@ const DataServiceAgent = ({ session, render }: DataServiceProps) => {
 };
 
 export default React.memo(DataServiceAgent, (prevProps, nextProps) => {
-  if (prevProps.session.expires != nextProps.session.expires) {
-    const oldExpire = Date.parse(prevProps.session.expires);
-    const newExpire = Date.parse(nextProps.session.expires);
-    if (newExpire - oldExpire > 86400) {
+  // Safe session comparison for WebSocket authentication
+  if (prevProps.session?.expires != nextProps.session?.expires) {
+    if (prevProps.session?.expires && nextProps.session?.expires) {
+      const oldExpire = Date.parse(prevProps.session.expires);
+      const newExpire = Date.parse(nextProps.session.expires);
+      if (newExpire - oldExpire > 86400) {
+        return false;
+      }
+    } else {
+      // If one has session and other doesn't, they're different
       return false;
     }
   } else if (prevProps.render !== nextProps.render) {

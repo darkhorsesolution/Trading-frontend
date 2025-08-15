@@ -20,6 +20,7 @@ const Index = () => {
 export async function getServerSideProps(context) {
   const isDesktop = context.query["desktop"] === "1" ? "1" : "0";
   const session = await getServerSession(context.req, context.res, buildAuthOptions(context.req, context.res));
+  
   if (session) {
     return {
       redirect: {
